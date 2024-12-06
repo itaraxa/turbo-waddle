@@ -1,0 +1,230 @@
+openapi: '3.0.1'
+info:
+  title: Gopherstore API
+  description: Описание API для задания 5-6 инкремента
+  version: 1.0.0
+servers:
+  - url: RUN_ADDRESS
+    description: Основной сервер - сервер сервиса накопительной системы лояльности
+paths:
+  /api/user/register:
+    post: 
+      summary: Зарегистрировать нового пользователя
+      description: Регистрация производится по паре логин/пароль. Каждый логин должен быть уникальным. После успешной регистрации должна происходить автоматическая аутентификация пользователя.
+      requestBody:
+        description: Логин и пароль нового пользователя
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: пользователь успешно зарегистрирован и аутентифицирован
+        '400':
+          description: неверный формат запроса
+        '409':
+          description: логин уже занят
+        '500':
+          description: внутрення ошибка сервера
+  
+  /api/user/login:
+    post:
+      summary: Аутентифицировать известного пользователя
+      description: Аутентификация производится по паре логин/пароль
+      requestBody:
+        description: Логин и пароль пользователя
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: пользователь успешно аутентифицирован
+        '400':
+          description: неверный формат запроса
+        '401':
+          description: неверная пара логин/пароль
+        '500':
+          description: внутренняя ошибка сервера
+    
+  /api/user/orders:
+    post:
+      summary: добавить номер заказа
+      description: Хендлер доступен только аутентифицированным пользователям. Номером заказа является последовательность цифр произвольной длины. Номер заказа может быть проверен на корректность ввода с помощью [алгоритма Луна](https://ru.wikipedia.org/wiki/Алгоритм_Луна).
+      requestBody:
+        description: Номер заказа
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+              example: 12345678903
+      responses:
+        '200':
+          description: номер заказа уже был загружен этим пользователем
+        '202':
+          description: новый номер заказа принят в обработку
+        '400':
+          description: неверный формат запроса
+        '401':
+          description: пользователь не аутентифицирован
+        '409':
+          description: номер заказа уже был загружен другим пользователем
+        '422':
+          description: неверный формат номера заказа
+        '500':
+          description: внутренняя ошибка сервера
+    get:
+      summary: Получение списка загруженных номеров заказов
+      description: Хендлер доступен только авторизованному пользователю. Номера заказа в выдаче должны быть отсортированы по времени загрузки от самых новых к самым старым. Формат даты — RFC3339.
+      responses:
+        '200':
+          description: успешная обработка заказа
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    number:
+                      type: string
+                      description: номер заказа
+                    status:
+                      type: string
+                      description: статус обработки заказа
+                      enum:
+                        - 'NEW'
+                        - 'PROCESSING'
+                        - 'INVALID'
+                        - 'PROCESSED'
+                    accrual:
+                      type: number
+                      format: decimal
+                      description: количество бонусов за заказ
+                    uploaded_at:
+                      type: string
+                      format: date-time
+                      description: время загрузки заказа
+                  required:
+                    - number
+                    - status
+                    - uploaded_at
+        '204':
+          description: нет данных для ответа
+        '401':
+          description: пользователь не авторизован
+        '500':
+          description: внутреняя ошибка сервера
+  /api/user/balance:
+    get:
+      summary: Получение текущего баланса пользователя
+      description: Хендлер доступен только авторизованному пользователю. В ответе должны содержаться данные о текущей сумме баллов лояльности, а также сумме использованных за весь период регистрации баллов.
+      responses:
+        '200':
+          description: успешная обработка запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current:
+                    type: number
+                    format: decimal
+                    description: текущий балланс пользователя
+                  withdrawn:
+                    type: number
+                    format: decimal
+                    description: сумма потраченных балов
+                required:
+                  - current
+                  - withdrawn
+        '401':
+          description: пользователь не авторизован
+        '500':
+          description: внутреняя ошибка сервера
+  /api/user/balance/withsraw:
+    post:
+      summary: Запрос на списание средств
+      description: Хендлер доступен только авторизованному пользователю. Номер заказа представляет собой гипотетический номер нового заказа пользователя в счет оплаты которого списываются баллы
+      requestBody:
+        description: номер заказа и сумма баллов к аписанию в счет оплаты
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: string
+                  description: номер заказа
+                sum:
+                  type: number
+                  format: decimal
+                  description: сумма баллов к списанию в счет товара
+              required:
+                - order
+                - sum
+      responses:
+        '200':
+          description: Успешная обработка запроса
+        '401':
+          description: пользователь не авторизован
+        '402':
+          description: на счету недостаточно средств
+        '422':
+          description: неверный номер заказа
+        '500':
+          description: внутренняя ошибка сервера
+  /api/user/withdrawals:
+    get:
+      summary: Получение информации о выводе средств
+      description: Хендлер доступен только авторизованному пользователю. Факты выводов в выдаче должны быть отсортированы по времени вывода от самых новых к самым старым. Формат даты — RFC3339.
+      responses:
+        '200':
+          description: успешная обработка запроса
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    order:
+                      type: string
+                      description: номер заказа
+                    sum:
+                      type: number
+                      format: decimal
+                      description: сумма баллов к списанию в счет товара
+                    processed_at:
+                      type: string
+                      format: date-time
+                      description: время обработки заказа
+                  required:
+                    - order
+                    - sum
+                    - processed_at
+        '204':
+          description: нет ни одного списания
+        '401':
+          description: пользователь не авторизован
+        '500':
+          description: внутренняя ошибка сервера
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+      required:
+        - login
+        - password 
+
+  

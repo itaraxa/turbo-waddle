@@ -1,0 +1,53 @@
+openapi: '3.0.1'
+info:
+  title: Accrual server API
+  description: Описание API взаимодействия с системой расчета начислений баллов лояльности
+  version: 1.0.0
+servers:
+  - url: RUN_ADDRESS
+    description: адрес и порт запуска сервиса
+paths:
+  /api/orders/{number}:
+    get:
+      summary: получение информации о расчёте начислений баллов лояльности
+      description: получение информации о расчёте начислений баллов лояльности
+      responses:
+        '200':
+          description: успешная обработка запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  order:
+                    type: string
+                    description: номер заказа
+                  status:
+                    type: string
+                    description: статус расчета начислений
+                    enum:
+                      - 'REGISTERED'
+                      - 'PROCESSING'
+                      - 'INVALID'
+                      - 'PROCESSED'
+                  accrual:
+                    type: number
+                    format: float
+                    description: рассчитанные баллы к начислению, при отсутствии начисления — поле отсутствует в ответе
+        '204':
+          description: заказ не зарегистрирован в системе расчета
+        '429':
+          description: превышено количество запросов к серверу
+          headers:
+            Retry-After:
+              description: время ожидания перед повторным запросом
+              schema:
+                type: integer
+                example: 60
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: No more than N requests per minute allowed
+        '500':
+          description: внутренняя ошибка сервера
