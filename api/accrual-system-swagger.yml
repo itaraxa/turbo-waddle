@@ -4,7 +4,7 @@ info:
   description: Описание API взаимодействия с системой расчета начислений баллов лояльности
   version: 1.0.0
 servers:
-  - url: RUN_ADDRESS
+  - url: localhost:8081
     description: адрес и порт запуска сервиса
 paths:
   /api/orders/{number}:
@@ -51,3 +51,53 @@ paths:
                 example: No more than N requests per minute allowed
         '500':
           description: внутренняя ошибка сервера
+  /api/orders:
+    post:
+      summary: Добавление заказа
+      description: добавление ордера в систему расчета
+      requestBody:
+        description: Номер заказа
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  type: string
+                  description: Номер заказа
+      responses:
+        '200':
+          description: запрос успешно обработан
+        '500':
+          description: внутрення ошибка сервера    
+  /api/goods:
+    post:
+      summary: Добавление товара
+      description: Добавление товара
+      requestBody:
+        description: Описание товара и способ расчета вознаграждения
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                match:
+                  type: string
+                  description: Наименование товара
+                reward:
+                  type: number
+                  description: величина бонусов
+                reward_type:
+                  type: string
+                  description: способ расчета
+                  enum:
+                    - "%"
+      responses:
+        '200':
+          description: запрос успешно обработан
+        '500':
+          description: внутрення ошибка сервера
+
+

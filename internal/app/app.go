@@ -28,10 +28,10 @@ type ServerApp struct {
 	log     logger
 	storage storager
 	r       router
-	config  *config.ServerConfig
+	config  *config.GopherMartConfig
 }
 
-func NewServerApp(log logger, storage storager, r router, config *config.ServerConfig) *ServerApp {
+func NewServerApp(log logger, storage storager, r router, config *config.GopherMartConfig) *ServerApp {
 	return &ServerApp{
 		log:     log,
 		storage: storage,

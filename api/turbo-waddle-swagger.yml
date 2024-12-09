@@ -4,7 +4,7 @@ info:
   description: Описание API для задания 5-6 инкремента
   version: 1.0.0
 servers:
-  - url: RUN_ADDRESS
+  - url: localhost:8080
     description: Основной сервер - сервер сервиса накопительной системы лояльности
 paths:
   /api/user/register:
