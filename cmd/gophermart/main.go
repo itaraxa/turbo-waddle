@@ -1,8 +1,13 @@
 package main
 
-import "github.com/itaraxa/turbo-waddle/internal/app"
+import (
+	"github.com/itaraxa/turbo-waddle/internal/app"
+	"github.com/itaraxa/turbo-waddle/internal/config"
+)
 
 func main() {
-	app := app.NewServerApp(nil, nil, nil, nil)
+	c := config.NewGopherMartConfig()
+
+	app := app.NewServerApp(c)
 	app.Run()
 }

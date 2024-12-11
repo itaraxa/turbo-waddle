@@ -1,3 +1,0 @@
-CREATE TABLE IF NOT EXISTS system (
-    var_id TEXT NOT NULL UNIQUE,
-    var_value TEXT NOT NULL);

@@ -1,9 +1,13 @@
 package app
 
 import (
+	sl "log"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/itaraxa/turbo-waddle/internal/config"
+	"github.com/itaraxa/turbo-waddle/internal/log"
+	"github.com/itaraxa/turbo-waddle/internal/services"
 	"github.com/itaraxa/turbo-waddle/internal/tranposrt/rest"
 )
 
@@ -21,7 +25,7 @@ type router interface {
 	Use(middlewares ...func(next http.Handler) http.Handler)
 	Get(pattern string, handlerFn http.HandlerFunc)
 	Post(pattern string, handlerFn http.HandlerFunc)
-	ListenAndServe(addr string, handler http.Handler) error
+	// ListenAndServe(addr string, handler http.Handler) error
 }
 
 type ServerApp struct {
@@ -31,11 +35,21 @@ type ServerApp struct {
 	config  *config.GopherMartConfig
 }
 
-func NewServerApp(log logger, storage storager, r router, config *config.GopherMartConfig) *ServerApp {
+func NewServerApp(config *config.GopherMartConfig) *ServerApp {
+	l, err := log.NewZapLogger(config.LogLevel)
+	if err != nil {
+		sl.Fatal(err)
+	}
+
+	storage, err := services.NewStorage(config)
+	if err != nil {
+		sl.Fatal(err)
+	}
+
 	return &ServerApp{
-		log:     log,
+		log:     l,
 		storage: storage,
-		r:       r,
+		r:       chi.NewRouter(),
 		config:  config,
 	}
 }

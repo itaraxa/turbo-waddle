@@ -1,7 +1,7 @@
 package services
 
 /*
-validateOrderNumber validates order number by Luhn algorithm
+ValidateOrderNumber validates order number by Luhn algorithm
 
 Args:
 
@@ -11,7 +11,7 @@ Returns:
 
 	bool: result of validation
 */
-func validateOrderNumber(orderNumber string) bool {
+func ValidateOrderNumber(orderNumber string) bool {
 	return LuhnAlghoritm(orderNumber)
 }
 
