@@ -90,12 +90,15 @@ func convertToZapFields(fields ...interface{}) []zap.Field {
 		if i+1 < len(fields) {
 			key, ok := fields[i].(string)
 			if ok {
-				if key != `duration` {
-					zapFields = append(zapFields, zap.Any(key, fields[i+1]))
-				} else {
+				switch key {
+				case `duration`:
 					if duration, ok2 := fields[i+1].(time.Duration); ok2 {
 						zapFields = append(zapFields, zap.Duration(key, duration))
 					}
+				case `password`:
+					zapFields = append(zapFields, zap.Any(key, `******`))
+				default:
+					zapFields = append(zapFields, zap.Any(key, fields[i+1]))
 				}
 			}
 		}
