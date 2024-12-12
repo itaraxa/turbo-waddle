@@ -1,0 +1,185 @@
+package crypto
+
+import (
+	"encoding/hex"
+	"fmt"
+	"reflect"
+	"testing"
+)
+
+func Test_generateSalt(t *testing.T) {
+	tests := []struct {
+		name    string
+		size    int
+		wantErr bool
+	}{
+		{
+			name:    "Generating 16-bytes salt",
+			size:    16,
+			wantErr: false,
+		},
+		{
+			name:    "Incorrect syze salt",
+			size:    0,
+			wantErr: true,
+		},
+		{
+			name:    "Incorrect syze salt",
+			size:    9999,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := generateSalt(tt.size)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("generateSalt() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) != tt.size && err == nil {
+				t.Errorf("generateSalt() = %v, want [16]byte", got)
+			}
+		})
+	}
+}
+
+func TestGeneratePasswordWithSaltHash(t *testing.T) {
+	type args struct {
+		salt     []byte
+		password []byte
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantHash [32]byte
+		wantErr  bool
+	}{
+		{
+			name: "Test generation 1",
+			args: args{
+				salt:     []byte("saltsalt"),
+				password: []byte("password"),
+			},
+			wantHash: convertHashStrToByteArray("1e4b70574b8ec9633ef4a1fc1113fbf5c04b6ec810798554bbc6bfe85beabb4c"),
+			wantErr:  false,
+		},
+		{
+			name: "Test generation 2",
+			args: args{
+				salt:     []byte("b98866d2be6be"),
+				password: []byte("744e3866f13c0"),
+			},
+			wantHash: convertHashStrToByteArray("b175dc6467e38d5e4151878d699adcc6ac033ed5134c7cbe539e9e0f1fdb264c"),
+			wantErr:  false,
+		},
+		{
+			name: "Test short salt",
+			args: args{
+				salt:     []byte("14"),
+				password: []byte("744e3866f13c0"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test empty password",
+			args: args{
+				salt:     []byte("b98866d2be6be"),
+				password: []byte(""),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GeneratePasswordWithSaltHash(tt.args.salt, tt.args.password)
+			if !reflect.DeepEqual(got, tt.wantHash) {
+				t.Errorf("GeneratePasswordWithSaltHash() = %s, want %s", hex.EncodeToString(got[:]), hex.EncodeToString(tt.wantHash[:]))
+			}
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GeneratePasswordWithSaltHash() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
+
+func BenchmarkGeneratePasswordWithSaltHash(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		salt, _ := generateSalt(32)
+		username := []byte(fmt.Sprintf("user%d", i))
+		_, _ = GeneratePasswordWithSaltHash(salt, username)
+	}
+}
+
+func convertHashStrToByteArray(str string) (hash [32]byte) {
+	t, _ := hex.DecodeString(str)
+	copy(hash[:], t)
+	return
+}
+
+func TestCheckPassword(t *testing.T) {
+	type args struct {
+		salt       []byte
+		password   []byte
+		storedHash [32]byte
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantResult bool
+		wantErr    bool
+	}{
+		{
+			name: "Valid password",
+			args: args{
+				salt:       []byte("saltsalt"),
+				password:   []byte("password"),
+				storedHash: convertHashStrToByteArray("1e4b70574b8ec9633ef4a1fc1113fbf5c04b6ec810798554bbc6bfe85beabb4c"),
+			},
+			wantResult: true,
+			wantErr:    false,
+		},
+		{
+			name: "Invalid password",
+			args: args{
+				salt:       []byte("saltsalt"),
+				password:   []byte("bla-bla-bla"),
+				storedHash: convertHashStrToByteArray("1e4b70574b8ec9633ef4a1fc1113fbf5c04b6ec810798554bbc6bfe85beabb4c"),
+			},
+			wantResult: false,
+			wantErr:    false,
+		},
+		{
+			name: "Empty password",
+			args: args{
+				salt:       []byte("saltsalt"),
+				password:   []byte(""),
+				storedHash: convertHashStrToByteArray("1e4b70574b8ec9633ef4a1fc1113fbf5c04b6ec810798554bbc6bfe85beabb4c"),
+			},
+			wantResult: false,
+			wantErr:    true,
+		},
+		{
+			name: "Incorrect salt",
+			args: args{
+				salt:       []byte("sl"),
+				password:   []byte("password"),
+				storedHash: convertHashStrToByteArray("1e4b70574b8ec9633ef4a1fc1113fbf5c04b6ec810798554bbc6bfe85beabb4c"),
+			},
+			wantResult: false,
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotResult, err := CheckPassword(tt.args.salt, tt.args.password, tt.args.storedHash)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CheckPassword() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotResult != tt.wantResult {
+				t.Errorf("CheckPassword() = %v, want %v", gotResult, tt.wantResult)
+			}
+		})
+	}
+}

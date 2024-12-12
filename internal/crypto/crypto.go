@@ -3,6 +3,13 @@ package crypto
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"errors"
+	"fmt"
+)
+
+const (
+	MIN_SALT_LENGTH = 8
+	MAX_SALT_LENGTH = 128
 )
 
 /*
@@ -17,19 +24,81 @@ func NewCrypt() *Crypt {
 	return &Crypt{}
 }
 
+/*
+generateSalt generates random bytes slice of random bytes of specified length
+
+Args:
+
+	size int: size of slice. In range MIN_SALT_LENGTH <= size <= MAX_SALT_LENGTH
+
+Returns:
+
+	[]byte: slice of random bytes
+	error
+*/
 func generateSalt(size int) ([]byte, error) {
+	if size < 8 || size > 128 {
+		return nil, errors.Join(ErrGeneratingRandomSalt,
+			fmt.Errorf("incorrect size = %d. Should be in range %d <= size <= %d", size, MIN_SALT_LENGTH, MAX_SALT_LENGTH),
+		)
+	}
 	s := make([]byte, size)
 	_, err := rand.Reader.Read(s)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrGeneratingRandomSalt, err)
 	}
 	return s, nil
 }
 
-func GeneratePasswordWithSaltHash(salt []byte, password []byte) [32]byte {
-	return sha256.Sum256(append(salt, password...))
+/*
+GeneratePasswordWithSaltHash generates SHA-256 hash for <salt + password> string
+
+Args:
+
+	salt []byte: salt as slice of bytes
+	paawsord []byte: password as slice of bytes
+
+Returns:
+
+	hash [32]byte: sha256 hash
+	err error: nil or error if salt is too short or long, if password is empty
+*/
+func GeneratePasswordWithSaltHash(salt []byte, password []byte) (hash [32]byte, err error) {
+	if len(salt) < MIN_SALT_LENGTH || len(salt) > MAX_SALT_LENGTH {
+		return hash, errors.Join(ErrHashingPassword,
+			fmt.Errorf("incorrect salt size = %d. Should be in range %d <= size <= %d", len(salt), MIN_SALT_LENGTH, MAX_SALT_LENGTH),
+		)
+	}
+	if len(password) == 0 {
+		return hash, errors.Join(ErrHashingPassword, fmt.Errorf("password is empty"))
+	}
+	hash = sha256.Sum256(append(salt, password...))
+
+	return
 }
 
-func CheckPassword(password string, salt []byte, storedHash [32]byte) bool {
-	return GeneratePasswordWithSaltHash(salt, []byte(password)) == storedHash
+/*
+CheckPassword compares generated hash with stored hash for password verification
+
+Args:
+
+	salt []byte
+	password []byte: password received during authorization
+	storedHash [32]byte: hash generated during user registration
+
+Returns:
+
+	result bool: true - if hashes are equal
+	err error: nil or error, occured while checking the hash
+*/
+func CheckPassword(salt []byte, password []byte, storedHash [32]byte) (result bool, err error) {
+	if len(password) == 0 {
+		return false, errors.Join(ErrCheckPassword, errors.New("password is empty"))
+	}
+	checkedHash, err := GeneratePasswordWithSaltHash(salt, password)
+	if err != nil {
+		return false, errors.Join(ErrCheckPassword, err)
+	}
+	result = checkedHash == storedHash
+	return
 }
