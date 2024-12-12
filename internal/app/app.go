@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/itaraxa/turbo-waddle/internal/config"
 	"github.com/itaraxa/turbo-waddle/internal/log"
-	"github.com/itaraxa/turbo-waddle/internal/services"
+	"github.com/itaraxa/turbo-waddle/internal/storage"
 	"github.com/itaraxa/turbo-waddle/internal/tranposrt/rest"
 )
 
@@ -41,7 +41,7 @@ func NewServerApp(config *config.GopherMartConfig) *ServerApp {
 		sl.Fatal(err)
 	}
 
-	storage, err := services.NewStorage(config)
+	storage, err := storage.NewStorage(config.DatabaseDSN)
 	if err != nil {
 		sl.Fatal(err)
 	}
