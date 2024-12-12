@@ -1,9 +1,9 @@
 package services
 
-import "github.com/itaraxa/turbo-waddle/internal/config"
+// import "github.com/itaraxa/turbo-waddle/internal/config"
 
-type Storage struct{}
+// type Storage struct{}
 
-func NewStorage(c *config.GopherMartConfig) (*Storage, error) {
-	return &Storage{}, nil
-}
+// func NewStorage(c *config.GopherMartConfig) (*Storage, error) {
+// 	return &Storage{}, nil
+// }
