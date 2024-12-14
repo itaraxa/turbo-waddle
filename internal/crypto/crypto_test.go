@@ -183,3 +183,31 @@ func TestCheckPassword(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateToken64(t *testing.T) {
+	tokenStorage := map[string]struct{}{}
+
+	t.Run("Uniq token test", func(t *testing.T) {
+		for i := 0; i < 1e6; i++ {
+			gotToken, err := GenerateToken64()
+			if err != nil {
+				t.Errorf("GenerateToken64() error = %v, wantErr %v", err, false)
+				return
+			}
+			if _, ok := tokenStorage[gotToken]; ok {
+				t.Error("duplicate token generated")
+				return
+			}
+			tokenStorage[gotToken] = struct{}{}
+		}
+	})
+}
+
+func BenchmarkGenerateToken64(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := GenerateToken64()
+		if err != nil {
+			b.Errorf("GenerateToken64() error = %v", err)
+		}
+	}
+}

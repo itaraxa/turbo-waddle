@@ -3,6 +3,7 @@ package crypto
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -113,4 +114,21 @@ func CheckPassword(salt []byte, password []byte, storedHash [32]byte) (result bo
 	}
 	result = checkedHash == storedHash
 	return
+}
+
+/*
+GenerateToken64 generates 64-byte random token
+
+Returns:
+
+	token64 string
+	err error
+*/
+func GenerateToken64() (token64 string, err error) {
+	s := make([]byte, 64)
+	_, err = rand.Reader.Read(s)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(s), nil
 }
