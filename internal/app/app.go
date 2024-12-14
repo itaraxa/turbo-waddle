@@ -1,8 +1,12 @@
 package app
 
 import (
+	"context"
 	sl "log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/itaraxa/turbo-waddle/internal/config"
@@ -73,6 +77,17 @@ func (sa *ServerApp) Run() {
 	sa.log.Warn(`Test WARN message`)
 	sa.log.Error(`Test ERROR message`)
 
+	stopAppChannel := make(chan os.Signal, 1)
+	signal.Notify(stopAppChannel, os.Interrupt)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func(cancel context.CancelFunc) {
+		defer cancel()
+		<-stopAppChannel
+		sa.log.Info(`stopping gophermat app`, `reason`, `getted interrupt signal from OS`)
+		close(stopAppChannel)
+	}(cancel)
+
 	// setup router
 	sa.r.Use(rest.Logger(),
 		rest.ChekcUser(),
@@ -101,6 +116,17 @@ func (sa *ServerApp) Run() {
 			sa.log.Fatal("router error", "err", err.Error())
 		}
 	}()
+
+	// stop router
+	<-ctx.Done()
+	sa.log.Info(`stopping router`, `reason`, `context was cancele`)
+	ctxWithTimeout, cancelWithTimeout := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelWithTimeout()
+	err := server.Shutdown(ctxWithTimeout)
+	if err != nil {
+		sa.log.Fatal(`stopping router`, `error`, err)
+	}
+	sa.log.Info(`router stopped`)
 
 	defer sa.log.Info(`server stopped`)
 }
