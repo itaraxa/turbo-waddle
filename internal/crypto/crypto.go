@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+
+	e "github.com/itaraxa/turbo-waddle/internal/errors"
 )
 
 const (
@@ -66,11 +68,15 @@ Returns:
 func GeneratePasswordWithSaltHash(salt []byte, password []byte) (hash [32]byte, err error) {
 	if len(salt) < MIN_SALT_LENGTH || len(salt) > MAX_SALT_LENGTH {
 		return hash, errors.Join(ErrHashingPassword,
+			e.ErrInternalServerError,
 			fmt.Errorf("incorrect salt size = %d. Should be in range %d <= size <= %d", len(salt), MIN_SALT_LENGTH, MAX_SALT_LENGTH),
 		)
 	}
 	if len(password) == 0 {
-		return hash, errors.Join(ErrHashingPassword, fmt.Errorf("password is empty"))
+		return hash, errors.Join(ErrHashingPassword,
+			e.ErrInvalidRequestFormat,
+			fmt.Errorf("password is empty"),
+		)
 	}
 	hash = sha256.Sum256(append(salt, password...))
 
@@ -93,11 +99,17 @@ Returns:
 */
 func CheckPassword(salt []byte, password []byte, storedHash [32]byte) (result bool, err error) {
 	if len(password) == 0 {
-		return false, errors.Join(ErrCheckPassword, errors.New("password is empty"))
+		return false, errors.Join(ErrCheckPassword,
+			e.ErrInvalidRequestFormat,
+			errors.New("password is empty"),
+		)
 	}
 	checkedHash, err := GeneratePasswordWithSaltHash(salt, password)
 	if err != nil {
-		return false, errors.Join(ErrCheckPassword, err)
+		return false, errors.Join(ErrCheckPassword,
+			e.ErrInternalServerError,
+			err,
+		)
 	}
 	result = checkedHash == storedHash
 	return

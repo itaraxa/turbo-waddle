@@ -1,6 +1,10 @@
 package services
 
-import "errors"
+import (
+	"errors"
+
+	e "github.com/itaraxa/turbo-waddle/internal/errors"
+)
 
 const (
 	LUHN = `Luhn`
@@ -27,7 +31,7 @@ func ValidateOrderNumber(orderNumber string, algorithm string) (result bool, err
 	case NONE:
 		return true, nil
 	default:
-		return false, ErrUnknownValidationAlgorithm
+		return false, errors.Join(ErrUnknownValidationAlgorithm, e.ErrInternalServerError)
 	}
 }
 
@@ -45,13 +49,19 @@ Returns:
 */
 func LuhnAlghoritm(orderNumber string) (result bool, err error) {
 	if len(orderNumber) < 2 {
-		return false, errors.Join(ErrIncorrectOrderNumber, errors.New("order number is too short"))
+		return false, errors.Join(ErrIncorrectOrderNumber,
+			e.ErrInvalidOrderNumberForamt,
+			errors.New("order number is too short"),
+		)
 	}
 	seed := orderNumber[:len(orderNumber)-1]
 	sum, parity := 0, len(seed)%2
 	for i, n := range seed {
 		if isNotNumber(n) {
-			return false, errors.Join(ErrIncorrectOrderNumber, errors.New("order number contains non-numeric symbol"))
+			return false, errors.Join(ErrIncorrectOrderNumber,
+				e.ErrInvalidOrderNumberForamt,
+				errors.New("order number contains non-numeric symbol"),
+			)
 		}
 		d := int(n - '0')
 		if i%2 != parity {
