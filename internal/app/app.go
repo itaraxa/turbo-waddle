@@ -41,7 +41,7 @@ func NewServerApp(config *config.GopherMartConfig) *ServerApp {
 		sl.Fatal(err)
 	}
 
-	storage, err := storage.NewStorage(config.DatabaseDSN)
+	storage, err := storage.NewStorage(config.DSN)
 	if err != nil {
 		sl.Fatal(err)
 	}
