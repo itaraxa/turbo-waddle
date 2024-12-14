@@ -27,5 +27,6 @@ func Authentication(ctx context.Context, l log.Logger, us userStorager, login st
 		l.Error("authentication user error", "login", login, "error", err)
 		return "", errors.Join(ErrUserAuthentication, err)
 	}
+	l.Info("authentication complited", "login", login, "token", token)
 	return
 }
