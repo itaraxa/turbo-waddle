@@ -9,10 +9,12 @@ import (
 	"github.com/itaraxa/turbo-waddle/internal/log"
 	"github.com/itaraxa/turbo-waddle/internal/storage"
 	"github.com/itaraxa/turbo-waddle/internal/tranposrt/rest"
+	"github.com/itaraxa/turbo-waddle/internal/version"
 )
 
 type logger interface {
 	Error(msg string, fields ...interface{})
+	Warn(msg string, fields ...interface{})
 	Info(msg string, fields ...interface{})
 	Debug(msg string, fields ...interface{})
 	Fatal(msg string, fields ...interface{})
@@ -56,8 +58,20 @@ func NewServerApp(config *config.GopherMartConfig) *ServerApp {
 
 func (sa *ServerApp) Run() {
 	sa.log.Info(`server started`,
-		`version`, version,
+		`app version`, version.ServerApp,
+		`database schema version`, version.Database,
 	)
+	sa.log.Debug(`server configuration`,
+		`endpoint`, sa.config.Endpoint,
+		`database`, sa.config.DSN,
+		`accrual system address`, sa.config.AccrualSystemAddress,
+		`log level`, sa.config.LogLevel,
+		`show version`, sa.config.ShowVersion,
+	)
+	sa.log.Debug(`Test DEBUG message`)
+	sa.log.Info(`Test INFO message`)
+	sa.log.Warn(`Test WARN message`)
+	sa.log.Error(`Test ERROR message`)
 
 	// setup router
 	sa.r.Use(rest.Logger(),

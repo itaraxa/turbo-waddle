@@ -62,6 +62,11 @@ func (zl *ZapLogger) Info(msg string, fields ...interface{}) {
 	zl.logger.Info(msg, zapFields...)
 }
 
+func (zl *ZapLogger) Warn(msg string, fields ...interface{}) {
+	zapFields := convertToZapFields(fields...)
+	zl.logger.Warn(msg, zapFields...)
+}
+
 func (zl *ZapLogger) Debug(msg string, fields ...interface{}) {
 	zapFields := convertToZapFields(fields...)
 	zl.logger.Debug(msg, zapFields...)
