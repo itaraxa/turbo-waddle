@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/itaraxa/turbo-waddle/internal/config"
 	"github.com/itaraxa/turbo-waddle/internal/log"
+	"github.com/itaraxa/turbo-waddle/internal/services"
 	"github.com/itaraxa/turbo-waddle/internal/storage"
 	"github.com/itaraxa/turbo-waddle/internal/tranposrt/rest"
 	"github.com/itaraxa/turbo-waddle/internal/version"
@@ -24,7 +25,9 @@ type logger interface {
 	Fatal(msg string, fields ...interface{})
 }
 
-type storager interface{}
+type storager interface {
+	services.UserStorager
+}
 
 type router interface {
 	http.Handler
@@ -41,13 +44,24 @@ type ServerApp struct {
 	config  *config.GopherMartConfig
 }
 
-func NewServerApp(config *config.GopherMartConfig) *ServerApp {
+func NewServerApp(ctx context.Context, config *config.GopherMartConfig) *ServerApp {
 	l, err := log.NewZapLogger(config.LogLevel)
 	if err != nil {
 		sl.Fatal(err)
 	}
+	l.Info(`server started`,
+		`app version`, version.ServerApp,
+		`database schema version`, version.Database,
+	)
+	l.Debug(`server configuration`,
+		`endpoint`, config.Endpoint,
+		`database`, config.DSN,
+		`accrual system address`, config.AccrualSystemAddress,
+		`log level`, config.LogLevel,
+		`show version`, config.ShowVersion,
+	)
 
-	storage, err := storage.NewStorage(config.DSN)
+	storage, err := storage.NewStorage(ctx, l, config.DSN)
 	if err != nil {
 		sl.Fatal(err)
 	}
@@ -61,17 +75,6 @@ func NewServerApp(config *config.GopherMartConfig) *ServerApp {
 }
 
 func (sa *ServerApp) Run() {
-	sa.log.Info(`server started`,
-		`app version`, version.ServerApp,
-		`database schema version`, version.Database,
-	)
-	sa.log.Debug(`server configuration`,
-		`endpoint`, sa.config.Endpoint,
-		`database`, sa.config.DSN,
-		`accrual system address`, sa.config.AccrualSystemAddress,
-		`log level`, sa.config.LogLevel,
-		`show version`, sa.config.ShowVersion,
-	)
 	sa.log.Debug(`Test DEBUG message`)
 	sa.log.Info(`Test INFO message`)
 	sa.log.Warn(`Test WARN message`)
@@ -95,7 +98,7 @@ func (sa *ServerApp) Run() {
 		rest.Decompress(),
 		rest.Compress(),
 	)
-	sa.r.Post(`/api/user/register`, rest.Register())
+	sa.r.Post(`/api/user/register`, rest.Register(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Post(`/api/user/login`, rest.Login())
 	sa.r.Post(`/api/user/orders`, rest.PostOrders())
 	sa.r.Get(`/api/user/orders`, rest.GetOrders())

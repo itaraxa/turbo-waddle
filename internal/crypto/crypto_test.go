@@ -211,3 +211,91 @@ func BenchmarkGenerateToken64(b *testing.B) {
 		}
 	}
 }
+
+func TestCreateJWT(t *testing.T) {
+	type args struct {
+		login     string
+		secretKey []byte
+	}
+	tests := []struct {
+		name            string
+		args            args
+		wantTokenString string
+		wantErr         bool
+	}{
+		{
+			name: "Generate JWT test: valid data",
+			args: args{
+				login:     "user1",
+				secretKey: []byte("secretKey"),
+			},
+			wantTokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InVzZXIxIn0.R7AZOJAL7ouhlfE6K3LFmUPIAsjBxLvzF-Vngmr0QeM",
+			wantErr:         false,
+		},
+		{
+			name: "Generate JWT test: empty secret key",
+			args: args{
+				login:     "user1",
+				secretKey: []byte(""),
+			},
+			wantTokenString: "",
+			wantErr:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotTokenString, err := CreateJWT(tt.args.login, tt.args.secretKey)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CreateJWT() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotTokenString != tt.wantTokenString {
+				t.Errorf("CreateJWT() = %v, want %v", gotTokenString, tt.wantTokenString)
+			}
+		})
+	}
+}
+
+func TestVerifyJWT(t *testing.T) {
+	type args struct {
+		tokenString string
+		secretKey   []byte
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantValid bool
+		wantErr   bool
+	}{
+		{
+			name: "Verify JWT test: valid token",
+			args: args{
+				tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InVzZXIxIn0.R7AZOJAL7ouhlfE6K3LFmUPIAsjBxLvzF-Vngmr0QeM",
+				secretKey:   []byte("secretKey"),
+			},
+			wantValid: true,
+			wantErr:   false,
+		},
+		{
+			name: "Verify JWT test: invalid token",
+			args: args{
+				tokenString: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InVzZXIxIn0.R7AZOJAL7ouhlfE6K3LFmUPIAsjBxLvzF-Vngmr0QPq",
+				secretKey:   []byte("secretKey"),
+			},
+			wantValid: false,
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotValid, err := VerifyJWT(tt.args.tokenString, tt.args.secretKey)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VerifyJWT() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotValid != tt.wantValid {
+				t.Errorf("VerifyJWT() = %v, want %v", gotValid, tt.wantValid)
+			}
+		})
+	}
+}

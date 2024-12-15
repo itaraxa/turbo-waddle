@@ -24,6 +24,7 @@ var (
 	ErrEmptyDSN                  = errors.New("validateConfig: empty DSN address")
 	ErrEmptyAccrualSystemAddress = errors.New("validateConfig: empty Accrual system address")
 	ErrUnknownLogLevel           = errors.New("validateConfig: unknown log level")
+	ErrEmptySecretKey            = errors.New("validateConfig: empty secret key")
 )
 
 type GopherMartConfig struct {
@@ -31,6 +32,7 @@ type GopherMartConfig struct {
 	DSN                  string // postgres://gophermart:\!qaz2wsx@localhost:5432/gophermart
 	AccrualSystemAddress string
 	LogLevel             string
+	SecretKey            []byte
 	ShowVersion          bool
 }
 
@@ -73,6 +75,8 @@ Returns:
 func (gmc *GopherMartConfig) parseFlags() (err error) {
 	flag.BoolVar(&gmc.ShowVersion, `v`, false, `Show version and exit`)
 	flag.StringVar(&gmc.LogLevel, `l`, `INFO`, `Set log level: INFO, DEBUG, etc.`)
+	var secretKey string
+	flag.StringVar(&secretKey, `k`, ``, `Set sekret key. Environment value SECRET_KEY`)
 
 	flag.StringVar(&gmc.Endpoint, `a`, ``, `HTTP-server endpoint. Environment variable RUN_ADDRESS`)
 	flag.StringVar(&gmc.DSN, `d`, ``, `Database source name. Environment variable DATABASE_URI`)
@@ -93,6 +97,8 @@ func (gmc *GopherMartConfig) parseFlags() (err error) {
 		err = errors.Join(ErrParseFlag, err)
 		return
 	}
+
+	gmc.SecretKey = []byte(secretKey)
 	return
 }
 
@@ -116,6 +122,10 @@ func (gmc *GopherMartConfig) parseEnv() (err error) {
 	if ok {
 		gmc.AccrualSystemAddress = accrualSystemAddress
 	}
+	secretKey, ok := os.LookupEnv(`SECRET_KEY`)
+	if ok {
+		gmc.SecretKey = []byte(secretKey)
+	}
 
 	return
 }
@@ -130,6 +140,10 @@ Returns:
 	err error
 */
 func (gmc *GopherMartConfig) validateConfig() (err error) {
+	if gmc.ShowVersion {
+		return
+	}
+
 	if len(gmc.Endpoint) == 0 {
 		err = errors.Join(err, ErrEmptyEndpoint)
 	}
@@ -150,6 +164,10 @@ func (gmc *GopherMartConfig) validateConfig() (err error) {
 	}
 	if _, ok := logLevels[gmc.LogLevel]; !ok {
 		err = errors.Join(err, ErrUnknownLogLevel)
+	}
+
+	if len(gmc.SecretKey) == 0 {
+		err = errors.Join(err, ErrEmptySecretKey)
 	}
 
 	return

@@ -36,31 +36,29 @@ func (m *MockUserStorager) EXPECT() *MockUserStoragerMockRecorder {
 }
 
 // AddNewUser mocks base method.
-func (m *MockUserStorager) AddNewUser(arg0 context.Context, arg1 log.Logger, arg2, arg3 string) (string, error) {
+func (m *MockUserStorager) AddNewUser(arg0 context.Context, arg1 log.Logger, arg2, arg3, arg4 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddNewUser", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "AddNewUser", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // AddNewUser indicates an expected call of AddNewUser.
-func (mr *MockUserStoragerMockRecorder) AddNewUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockUserStoragerMockRecorder) AddNewUser(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewUser", reflect.TypeOf((*MockUserStorager)(nil).AddNewUser), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewUser", reflect.TypeOf((*MockUserStorager)(nil).AddNewUser), arg0, arg1, arg2, arg3, arg4)
 }
 
 // LoginUser mocks base method.
-func (m *MockUserStorager) LoginUser(arg0 context.Context, arg1 log.Logger, arg2, arg3 string) (string, error) {
+func (m *MockUserStorager) LoginUser(arg0 context.Context, arg1 log.Logger, arg2, arg3, arg4 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoginUser", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "LoginUser", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // LoginUser indicates an expected call of LoginUser.
-func (mr *MockUserStoragerMockRecorder) LoginUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockUserStoragerMockRecorder) LoginUser(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginUser", reflect.TypeOf((*MockUserStorager)(nil).LoginUser), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoginUser", reflect.TypeOf((*MockUserStorager)(nil).LoginUser), arg0, arg1, arg2, arg3, arg4)
 }

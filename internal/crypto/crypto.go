@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/golang-jwt/jwt/v5"
 	e "github.com/itaraxa/turbo-waddle/internal/errors"
 )
 
@@ -39,7 +40,7 @@ Returns:
 	[]byte: slice of random bytes
 	error
 */
-func generateSalt(size int) ([]byte, error) {
+func GenerateSalt(size int) ([]byte, error) {
 	if size < 8 || size > 128 {
 		return nil, errors.Join(ErrGeneratingRandomSalt,
 			fmt.Errorf("incorrect size = %d. Should be in range %d <= size <= %d", size, MIN_SALT_LENGTH, MAX_SALT_LENGTH),
@@ -131,4 +132,60 @@ func GenerateToken64() (token64 string, err error) {
 		return "", err
 	}
 	return hex.EncodeToString(s), nil
+}
+
+/*
+CreateJWT generates JWT token
+
+Args:
+
+	login string
+	secretKey []byte
+
+Returns:
+
+	tokenString string
+	err error
+*/
+func CreateJWT(login string, secretKey []byte) (tokenString string, err error) {
+	if login == "" {
+		err = errors.Join(e.ErrNoData, ErrJWTSignEmptyLogin)
+		return
+	}
+	if len(secretKey) == 0 {
+		err = errors.Join(e.ErrInternalServerError, ErrJWTSignEmptySecretKey)
+		return
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"login": login})
+	tokenString, err = token.SignedString(secretKey)
+	if err != nil {
+		err = errors.Join(e.ErrInternalServerError, err)
+		return
+	}
+	return
+}
+
+/*
+VerifyJWT verifyes JWT token
+
+Args:
+
+	tokenString string
+	secretKey []byte
+
+Returns:
+
+	valid bool
+	err error
+*/
+func VerifyJWT(tokenString string, secretKey []byte) (valid bool, err error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	if err != nil {
+		err = errors.Join(e.ErrInternalServerError, err)
+		return
+	}
+	valid = token.Valid
+	return
 }

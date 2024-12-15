@@ -4,18 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sync"
 	"time"
 
+	"github.com/itaraxa/turbo-waddle/internal/log"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-/*
-PostgresRepository is the struct for wrapping PostgreSQL storage
-*/
 type PostgresRepository struct {
-	db *sql.DB
-	mu sync.Mutex
+	DB *sql.DB
 }
 
 /*
@@ -24,28 +20,34 @@ NewPostgresRepository creates instance of PostgresRepository
 Args:
 
 	ctx context.Context
+	l log.Logger
 	databaseURL: string for connection to databse, example: "postgres://username:password@localhost:5432/database_name"
 
 Returns:
 
-	dbStorager
-	error
+	db *sql.DB
+	err error
 */
-func NewPostgresRepository(ctx context.Context, databaseURL string) (*PostgresRepository, error) {
+func NewPostgresRepository(ctx context.Context, l log.Logger, databaseURL string) (pr *PostgresRepository, err error) {
+	l.Info("Open connection to database", "connection string", databaseURL)
 	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
-		return nil, err
+		l.Error("Openning connection to database error", "error", err)
+		return nil, ErrOpenConnection
 	}
 
 	ctxWithTimeout, cancelWithTimeout := context.WithTimeout(ctx, 5*time.Second)
 	defer cancelWithTimeout()
 
+	l.Info("Start database migrations")
 	err = prepareTablesContext(ctxWithTimeout, db)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create tables in database storage: %w", err)
+		l.Error("Database migration error", "error", err)
+		return nil, ErrMigration
 	}
+	l.Info("Database is ready")
 
-	return &PostgresRepository{db: db}, nil
+	return &PostgresRepository{DB: db}, nil
 }
 
 /*
@@ -60,7 +62,7 @@ Returns:
 	error: nil or an error that occurred while processing the ping db
 */
 func (pr *PostgresRepository) PingContext(ctx context.Context) error {
-	if err := pr.db.PingContext(ctx); err != nil {
+	if err := pr.DB.PingContext(ctx); err != nil {
 		return err
 	}
 	return nil
@@ -74,8 +76,29 @@ Returns:
 	error: nil or an error that occurred while closing connection
 */
 func (pr *PostgresRepository) Close() error {
-	if err := pr.db.Close(); err != nil {
+	if err := pr.DB.Close(); err != nil {
 		return err
 	}
 	return nil
+}
+
+/*
+NewTransaction init transaction and create function that apply or rollback changes
+*/
+func NewTransaction(ctx context.Context, txOpts *sql.TxOptions, db *sql.DB) (*sql.Tx, func(tx *sql.Tx), error) {
+	tx, err := db.BeginTx(ctx, txOpts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot start transaction: %w", err)
+	}
+	txFinish := func(tx *sql.Tx) {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}
+	return tx, txFinish, nil
 }
