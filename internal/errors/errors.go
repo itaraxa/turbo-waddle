@@ -17,6 +17,7 @@ var (
 	ErrLoginIsAlreadyUsed   = &serverError{Msg: `Login already used`, Code: 409}
 	ErrInternalServerError  = &serverError{Msg: `Internal server error`, Code: 500}
 	// Login errors
+	ErrUserNotFound         = &serverError{Msg: `User not found`, Code: 401}
 	ErrInvalidLoginPassPair = &serverError{Msg: `Invalid login/password pair`, Code: 401}
 	// Orders errors
 	ErrUserIsNotauthenticated   = &serverError{Msg: `User is not authenticated`, Code: 401}

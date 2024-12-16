@@ -13,8 +13,10 @@ type Storager interface {
 }
 
 type UserStorager interface {
-	AddNewUser(ctx context.Context, l log.Logger, login string, password string, token string) (err error)
+	AddNewUser(ctx context.Context, l log.Logger, login string, hash []byte, salt []byte, token string) (err error)
+	GetUserHash(ctx context.Context, l log.Logger, login string) (salt, hash []byte, err error)
 	LoginUser(ctx context.Context, l log.Logger, login string, password string, token string) (err error)
+	AddSession(ctx context.Context, l log.Logger, login string, token string) (err error)
 }
 
 type Storage struct {

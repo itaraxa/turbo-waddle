@@ -11,12 +11,12 @@ import (
 
 /*
 AddUser adds new user into gophermart.users
-Tx start
+>Tx start
  1. Chek if not exist
  2. Add user
  3. Check adding
 
-# Tx finish
+>Tx finish
 
 Args:
 
@@ -66,7 +66,52 @@ func (pr *PostgresRepository) AddUser(ctx context.Context, l log.Logger, login s
 	return
 }
 
+/*
+AddSession saves autorisation token into user_sessions table
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	login string
+	token string
+
+Returns:
+
+	err error
+*/
 func (pr *PostgresRepository) AddSession(ctx context.Context, l log.Logger, login string, token string) (err error) {
 	_, err = pr.DB.ExecContext(ctx, "INSERT INTO gophermart.user_sessions (user_id, token) VALUES ((SELECT user_id FROM gophermart.users WHERE user_name = $1), $2)", login, token)
+	return
+}
+
+/*
+GetUserHash returns password_salt and password_hash from users table
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	login string
+
+Returns:
+
+	salt, hash []byte
+	err error
+*/
+func (pr *PostgresRepository) GetUserHash(ctx context.Context, l log.Logger, login string) (salt, hash []byte, err error) {
+	var user_id sql.NullInt64
+	err = pr.DB.QueryRowContext(ctx, "SELECT user_id, password_hash, password_salt FROM gophermart.users WHERE user_name = $1;", login).Scan(&user_id, &hash, &salt)
+	if err != nil && err != sql.ErrNoRows {
+		l.Error("error executing SQL-query", "error", err)
+		err = errors.Join(err, e.ErrInternalServerError)
+	}
+
+	if !user_id.Valid {
+		l.Error("user not found", "login", login)
+		err = errors.Join(e.ErrUserNotFound)
+		return
+	}
+
 	return
 }

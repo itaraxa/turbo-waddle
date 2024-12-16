@@ -17,19 +17,7 @@ const (
 )
 
 /*
-Объект для работы с криптографией:
-- генерация соли и хэша пароля
-- проверка пароля
-*/
-type Crypt struct {
-}
-
-func NewCrypt() *Crypt {
-	return &Crypt{}
-}
-
-/*
-generateSalt generates random bytes slice of random bytes of specified length
+GenerateSalt generates random bytes slice of random bytes of specified length
 
 Args:
 
@@ -38,7 +26,7 @@ Args:
 Returns:
 
 	[]byte: slice of random bytes
-	error
+	error: error if size is incorrect or error occured while generating random bytes
 */
 func GenerateSalt(size int) ([]byte, error) {
 	if size < 8 || size > 128 {

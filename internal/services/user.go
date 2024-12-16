@@ -1,8 +1,11 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
+	"time"
 
 	"github.com/itaraxa/turbo-waddle/internal/crypto"
 	e "github.com/itaraxa/turbo-waddle/internal/errors"
@@ -12,6 +15,7 @@ import (
 // Зарегистрировать нового пользователя
 func Registration(ctx context.Context, l log.Logger, us UserStorager, login string, password string, sk []byte) (token string, err error) {
 	l.Info("registration new user", "login", login, "password", password)
+	startTime := time.Now()
 
 	salt, err := crypto.GenerateSalt(32)
 	if err != nil {
@@ -32,25 +36,47 @@ func Registration(ctx context.Context, l log.Logger, us UserStorager, login stri
 		l.Error("adding new user error", "login", login, "error", err)
 		return "", errors.Join(ErrUserRegistration, err)
 	}
-	l.Info("registration complited", "login", login, "token", token)
+	l.Info("registration complited", "login", login, "token", token, "duration", time.Since(startTime))
 	return
 }
 
 // Аутентификация пользователя
-func Authentication(ctx context.Context, l log.Logger, us UserStorager, login string, password string) (token string, err error) {
+func Authentication(ctx context.Context, l log.Logger, us UserStorager, login string, password string, sk []byte) (token string, err error) {
 	l.Info("authentication user", "login", login, "password", password)
+	startTime := time.Now()
 
-	token, err = crypto.GenerateToken64()
+	salt, storedHash, err := us.GetUserHash(ctx, l, login)
 	if err != nil {
-		l.Error("generating toke for new user error", "error", err)
+		l.Error("authentication user error", "login", login, "error", err)
+		return
+	}
+	l.Debug("hashes from storage", "salt", hex.EncodeToString(salt), "password_hash", hex.EncodeToString(storedHash))
+
+	verifiedHash, err := crypto.GeneratePasswordWithSaltHash(salt, []byte(password))
+	if err != nil {
+		l.Error("generation hash for checking error", "login", login, "password", password, "error", err)
+		err = errors.Join(err, e.ErrInternalServerError)
+		return
+	}
+
+	if !bytes.Equal(storedHash, verifiedHash[:]) {
+		l.Debug("hashes not equal", "wanted", hex.EncodeToString(storedHash), "got", hex.EncodeToString(verifiedHash[:]))
+		l.Error("invalid password hash", "login", login, "password", password)
+		err = e.ErrInvalidLoginPassPair
+		return
+	}
+
+	token, err = crypto.CreateJWT(login, sk)
+	if err != nil {
+		l.Error("generating token for user error", "error", err)
 		return "", errors.Join(e.ErrInternalServerError, err)
 	}
 
-	err = us.LoginUser(ctx, l, login, password, token)
+	err = us.AddSession(ctx, l, login, token)
 	if err != nil {
-		l.Error("authentication user error", "login", login, "error", err)
-		return "", errors.Join(ErrUserAuthentication, err)
+		l.Error("adding session into storage error", "login", login, "token", token, "error", err)
+		return "", errors.Join(e.ErrInternalServerError, err)
 	}
-	l.Info("authentication complited", "login", login, "token", token)
+	l.Info("authentication complited", "login", login, "token", token, "duration", time.Since(startTime))
 	return
 }

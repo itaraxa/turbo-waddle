@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -20,6 +21,9 @@ func main() {
 		return
 	}
 
-	app := app.NewServerApp(c)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	app := app.NewServerApp(ctx, c)
 	app.Run()
 }
