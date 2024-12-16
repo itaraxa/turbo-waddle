@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_generateSalt(t *testing.T) {
+func Test_GenerateSalt(t *testing.T) {
 	tests := []struct {
 		name    string
 		size    int
@@ -31,13 +31,13 @@ func Test_generateSalt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := generateSalt(tt.size)
+			got, err := GenerateSalt(tt.size)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("generateSalt() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GenerateSalt() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if len(got) != tt.size && err == nil {
-				t.Errorf("generateSalt() = %v, want [16]byte", got)
+				t.Errorf("GenerateSalt() = %v, want [16]byte", got)
 			}
 		})
 	}
@@ -105,7 +105,7 @@ func TestGeneratePasswordWithSaltHash(t *testing.T) {
 
 func BenchmarkGeneratePasswordWithSaltHash(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		salt, _ := generateSalt(32)
+		salt, _ := GenerateSalt(32)
 		username := []byte(fmt.Sprintf("user%d", i))
 		_, _ = GeneratePasswordWithSaltHash(salt, username)
 	}

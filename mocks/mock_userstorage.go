@@ -36,17 +36,47 @@ func (m *MockUserStorager) EXPECT() *MockUserStoragerMockRecorder {
 }
 
 // AddNewUser mocks base method.
-func (m *MockUserStorager) AddNewUser(arg0 context.Context, arg1 log.Logger, arg2, arg3, arg4 string) error {
+func (m *MockUserStorager) AddNewUser(arg0 context.Context, arg1 log.Logger, arg2 string, arg3, arg4 []byte, arg5 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddNewUser", arg0, arg1, arg2, arg3, arg4)
+	ret := m.ctrl.Call(m, "AddNewUser", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddNewUser indicates an expected call of AddNewUser.
-func (mr *MockUserStoragerMockRecorder) AddNewUser(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+func (mr *MockUserStoragerMockRecorder) AddNewUser(arg0, arg1, arg2, arg3, arg4, arg5 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewUser", reflect.TypeOf((*MockUserStorager)(nil).AddNewUser), arg0, arg1, arg2, arg3, arg4)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewUser", reflect.TypeOf((*MockUserStorager)(nil).AddNewUser), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
+// AddSession mocks base method.
+func (m *MockUserStorager) AddSession(arg0 context.Context, arg1 log.Logger, arg2, arg3 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddSession", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddSession indicates an expected call of AddSession.
+func (mr *MockUserStoragerMockRecorder) AddSession(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSession", reflect.TypeOf((*MockUserStorager)(nil).AddSession), arg0, arg1, arg2, arg3)
+}
+
+// GetUserHash mocks base method.
+func (m *MockUserStorager) GetUserHash(arg0 context.Context, arg1 log.Logger, arg2 string) ([]byte, []byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserHash", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetUserHash indicates an expected call of GetUserHash.
+func (mr *MockUserStoragerMockRecorder) GetUserHash(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserHash", reflect.TypeOf((*MockUserStorager)(nil).GetUserHash), arg0, arg1, arg2)
 }
 
 // LoginUser mocks base method.
