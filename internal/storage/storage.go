@@ -11,7 +11,8 @@ import (
 
 type Storager interface {
 	UserStorager
-	HelthCheck(ctx context.Context, l log.Logger) (err error)
+	OrderStorager
+	HealthCheckStorager
 }
 
 type UserStorager interface {
@@ -21,6 +22,13 @@ type UserStorager interface {
 	AddSession(ctx context.Context, l log.Logger, login string, token string) (err error)
 }
 
+type OrderStorager interface {
+	LoadOrder(ctx context.Context, l log.Logger, login string, order string) (err error)
+}
+
+type HealthCheckStorager interface {
+	HealthCheck(ctx context.Context, l log.Logger) (err error)
+}
 type Storage struct {
 	*postgres.PostgresRepository
 	dsn string
@@ -41,7 +49,7 @@ func NewStorage(ctx context.Context, l log.Logger, dsn string) (*Storage, error)
 	}, nil
 }
 
-func (s *Storage) HelthCheck(ctx context.Context, l log.Logger) (err error) {
+func (s *Storage) HealthCheck(ctx context.Context, l log.Logger) (err error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 	if err = s.PingContext(ctxWithTimeout); err != nil {
