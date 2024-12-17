@@ -16,6 +16,7 @@ import (
 
 type storager interface {
 	services.UserStorager
+	services.OrderStorager
 }
 
 /*
@@ -181,9 +182,85 @@ func Login(ctx context.Context, l log.Logger, s storager, sk []byte) http.Handle
 }
 
 // Добавление заказа
-func PostOrders() http.HandlerFunc {
+func PostOrders(ctx context.Context, l log.Logger, s storager, sk []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		l.Info("order adding request")
+		startTime := time.Now()
 
+		// Check authentication
+		token := r.Header.Get("Autorisation")
+		if token == "" {
+			http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+			err := errors.Join(e.ErrUserIsNotauthenticated, errors.New("authetication token was not provided"))
+			l.Error("user not authenticated", "error", err)
+			return
+		}
+		login, err := services.CheckAuthentication(ctx, l, s, token, sk)
+		if err != nil {
+			http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+			err := errors.Join(e.ErrUserIsNotauthenticated, err)
+			l.Error("user not authenticated", "error", err)
+			return
+		}
+		l.Debug("request from user", "login", login)
+
+		// Read data from request
+		var buf bytes.Buffer
+		_, err = buf.ReadFrom(r.Body)
+		if err != nil {
+			http.Error(w, e.ErrInvalidRequestFormat.Error(), e.ErrInvalidRequestFormat.Code)
+			l.Error("cannot read from request body")
+			return
+		}
+
+		// Check body
+		orderNumber := buf.String()
+		if len(orderNumber) == 0 {
+			http.Error(w, e.ErrInvalidRequestFormat.Error(), e.ErrInvalidRequestFormat.Code)
+			err := errors.Join(e.ErrInvalidRequestFormat, errors.New("empty order number"))
+			l.Error("check order number error", "error", err)
+			return
+		}
+		for ch := range orderNumber {
+			if ch < '0' || ch > '9' {
+				http.Error(w, e.ErrInvalidRequestFormat.Error(), e.ErrInvalidRequestFormat.Code)
+				err := errors.Join(e.ErrInvalidRequestFormat, errors.New("non digit symbols in order number"))
+				l.Error("check order number error", "error", err)
+				return
+			}
+		}
+
+		// Validate order number
+		ok, err := services.ValidateOrderNumber(orderNumber, services.LUHN)
+		if err != nil && errors.Is(err, e.ErrInvalidOrderNumberFormat) {
+			http.Error(w, e.ErrInvalidOrderNumberFormat.Error(), e.ErrInvalidOrderNumberFormat.Code)
+			l.Error("invalid order number format", "error", err)
+			return
+		}
+		if err != nil {
+			http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+			l.Error("validation order number error", "error", err)
+			return
+		}
+
+		if !ok {
+			http.Error(w, e.ErrInvalidOrderNumberFormat.Error(), e.ErrInvalidOrderNumberFormat.Code)
+			l.Error("order number failed Luhn algorithm validation", "order number", orderNumber, "error", err)
+			return
+		}
+		l.Debug("getted order number is valid", "order number", orderNumber)
+
+		// Add order into storage
+		err = services.LoadOrder(ctx, l, s, login, orderNumber)
+		if err != nil {
+			return
+		}
+
+		// Write and send response with Autorisation token
+		w.Header().Set("Autorisation", token)
+		w.WriteHeader(http.StatusAccepted)
+
+		l.Info(`order adding request completed`, `duration`, time.Since(startTime))
 	}
 }
 

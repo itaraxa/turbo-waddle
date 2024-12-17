@@ -8,13 +8,13 @@ import (
 )
 
 // Добавление запроса на расчет бонусов за заказ
-func LoadOrder(ctx context.Context, l log.Logger, os orderStorager, user string, order string) error {
-
+func LoadOrder(ctx context.Context, l log.Logger, os OrderStorager, login string, order string) (err error) {
+	err = os.LoadOrder(ctx, l, login, order)
 	return nil
 }
 
 // Получение информации о бонусах пользователя
-func GetOrders(ctx context.Context, l log.Logger, os orderStorager, user string) (orders []models.Order, err error) {
+func GetOrders(ctx context.Context, l log.Logger, os OrderStorager, login string) (orders []models.Order, err error) {
 
 	return
 }

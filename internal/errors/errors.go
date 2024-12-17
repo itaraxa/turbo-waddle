@@ -20,10 +20,11 @@ var (
 	ErrUserNotFound         = &serverError{Msg: `User not found`, Code: 401}
 	ErrInvalidLoginPassPair = &serverError{Msg: `Invalid login/password pair`, Code: 401}
 	// Orders errors
-	ErrUserIsNotauthenticated   = &serverError{Msg: `User is not authenticated`, Code: 401}
-	ErrOrderAlreadyUploaded     = &serverError{Msg: `Order number has already been uploaded by another user`, Code: 409}
-	ErrInvalidOrderNumberForamt = &serverError{Msg: `Invalid order number format`, Code: 422}
-	ErrNoData                   = &serverError{Msg: `No data for responce`, Code: 204}
+	ErrUserIsNotauthenticated        = &serverError{Msg: `User is not authenticated`, Code: 401}
+	ErrOrderAlreadyUploadedOtherUser = &serverError{Msg: `Order number has already been uploaded by another user`, Code: 409}
+	ErrOrderAlreadyUploaded          = &serverError{Msg: `Order number has already been uploaded`, Code: 202}
+	ErrInvalidOrderNumberFormat      = &serverError{Msg: `Invalid order number format`, Code: 422}
+	ErrNoData                        = &serverError{Msg: `No data for responce`, Code: 204}
 	// Balance errors
 	ErrInsufficientFunds  = &serverError{Msg: `Insufficient funds in the account`, Code: 402}
 	ErrInvalidOrderNumber = &serverError{Msg: `Invalid order number`, Code: 422}
