@@ -27,6 +27,7 @@ type logger interface {
 
 type storager interface {
 	services.UserStorager
+	services.StoragerUtilites
 }
 
 type router interface {
@@ -90,6 +91,24 @@ func (sa *ServerApp) Run() {
 		sa.log.Info(`stopping gophermat app`, `reason`, `getted interrupt signal from OS`)
 		close(stopAppChannel)
 	}(cancel)
+
+	// database healthcheck
+	go func(ctx context.Context, l logger, stopCh chan os.Signal, s storager, period time.Duration) {
+		ticker := time.NewTicker(period)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := s.HelthCheck(ctx, l); err != nil {
+					l.Error("database healthcheck failed", "error", err)
+				} else {
+					l.Info("database connection ok")
+				}
+			case <-stopCh:
+				return
+			}
+		}
+	}(ctx, sa.log, stopAppChannel, sa.storage, 10*time.Second)
 
 	// setup router
 	sa.r.Use(rest.Logger(),

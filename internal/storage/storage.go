@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/itaraxa/turbo-waddle/internal/database/postgres"
 	"github.com/itaraxa/turbo-waddle/internal/log"
@@ -10,6 +11,7 @@ import (
 
 type Storager interface {
 	UserStorager
+	HelthCheck(ctx context.Context, l log.Logger) (err error)
 }
 
 type UserStorager interface {
@@ -37,4 +39,13 @@ func NewStorage(ctx context.Context, l log.Logger, dsn string) (*Storage, error)
 		pr,
 		dsn,
 	}, nil
+}
+
+func (s *Storage) HelthCheck(ctx context.Context, l log.Logger) (err error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+	if err = s.PingContext(ctxWithTimeout); err != nil {
+		return err
+	}
+	return
 }

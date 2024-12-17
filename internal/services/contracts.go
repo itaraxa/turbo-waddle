@@ -13,6 +13,10 @@ type UserStorager interface {
 	AddSession(ctx context.Context, l log.Logger, login string, token string) (err error)
 }
 
+type StoragerUtilites interface {
+	HelthCheck(ctx context.Context, l log.Logger) (err error)
+}
+
 type orderStorager interface{}
 
 type balanceStorager interface{}
