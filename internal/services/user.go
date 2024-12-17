@@ -80,3 +80,28 @@ func Authentication(ctx context.Context, l log.Logger, us UserStorager, login st
 	l.Info("authentication complited", "login", login, "token", token, "duration", time.Since(startTime))
 	return
 }
+
+// Проверка JWT и получение имени пользователя
+func CheckAuthentication(ctx context.Context, l log.Logger, us UserStorager, token string, sk []byte) (login string, err error) {
+	l.Info("authentication check", "token", token)
+
+	valid, err := crypto.VerifyJWT(token, sk)
+	if err != nil {
+		l.Error("verify JWT error", "token", token, "error", err)
+		return
+	}
+	if !valid {
+		l.Error("invalid JWT token", "token", token)
+		return "", e.ErrUserIsNotauthenticated
+	}
+
+	login, err = crypto.GetUsernameFromJWT(token, sk)
+	if err != nil {
+		l.Error("parse JWT error", "token", token, "error", err)
+		return "", e.ErrUserIsNotauthenticated
+	}
+
+	l.Info("authentication check completed", "login", login)
+
+	return
+}

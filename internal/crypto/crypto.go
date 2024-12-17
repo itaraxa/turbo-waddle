@@ -177,3 +177,18 @@ func VerifyJWT(tokenString string, secretKey []byte) (valid bool, err error) {
 	valid = token.Valid
 	return
 }
+
+type Claims struct {
+	jwt.RegisteredClaims
+	login string
+}
+
+func GetUsernameFromJWT(tokenString string, secretKey []byte) (login string, err error) {
+	claims := &Claims{}
+
+	jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+
+	return claims.login, nil
+}
