@@ -39,14 +39,13 @@ func (pr *PostgresRepository) AddUser(ctx context.Context, l log.Logger, login s
 	defer txFinish(tx)
 
 	l.Info("check existing user in database", "login", login)
-	var user_id sql.NullInt64
-	err = tx.QueryRowContext(ctx, "SELECT user_id FROM gophermart.users WHERE user_name = $1;", login).Scan(&user_id)
+	exist, user_id, err := pr.CheckUser(ctx, l, tx, login)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		l.Error("getting data from database error", "error", err)
 		return errors.Join(err, ErrAddUserQueryToDB)
 	}
-	if user_id.Valid {
-		l.Info("user already exists", "login", login, "user_id", user_id.Int64)
+	if exist {
+		l.Info("user already exists", "login", login, "user_id", user_id)
 		return errors.Join(e.ErrLoginIsAlreadyUsed)
 	}
 	l.Info("add user into database", "login", login)
@@ -61,7 +60,7 @@ func (pr *PostgresRepository) AddUser(ctx context.Context, l log.Logger, login s
 		return errors.Join(err, ErrAddUserQueryToDB)
 	}
 
-	l.Info("user added", "login", login, "user_id", user_id.Int64)
+	l.Info("user added", "login", login, "user_id", user_id)
 
 	return
 }
@@ -114,4 +113,15 @@ func (pr *PostgresRepository) GetUserHash(ctx context.Context, l log.Logger, log
 	}
 
 	return
+}
+
+func (pr *PostgresRepository) CheckUser(ctx context.Context, l log.Logger, tx *sql.Tx, login string) (exist bool, id int64, err error) {
+	l.Info("check existing user in database", "login", login)
+	var user_id sql.NullInt64
+	err = tx.QueryRowContext(ctx, "SELECT user_id FROM gophermart.users WHERE user_name = $1;", login).Scan(&user_id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		l.Error("getting data from database error", "error", err)
+		return false, 0, errors.Join(err, ErrAddUserQueryToDB)
+	}
+	return true, user_id.Int64, nil
 }
