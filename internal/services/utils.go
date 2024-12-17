@@ -50,7 +50,7 @@ Returns:
 func LuhnAlghoritm(orderNumber string) (result bool, err error) {
 	if len(orderNumber) < 2 {
 		return false, errors.Join(ErrIncorrectOrderNumber,
-			e.ErrInvalidOrderNumberForamt,
+			e.ErrInvalidOrderNumberFormat,
 			errors.New("order number is too short"),
 		)
 	}
@@ -59,7 +59,7 @@ func LuhnAlghoritm(orderNumber string) (result bool, err error) {
 	for i, n := range seed {
 		if isNotNumber(n) {
 			return false, errors.Join(ErrIncorrectOrderNumber,
-				e.ErrInvalidOrderNumberForamt,
+				e.ErrInvalidOrderNumberFormat,
 				errors.New("order number contains non-numeric symbol"),
 			)
 		}
