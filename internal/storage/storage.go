@@ -7,6 +7,7 @@ import (
 
 	"github.com/itaraxa/turbo-waddle/internal/database/postgres"
 	"github.com/itaraxa/turbo-waddle/internal/log"
+	"github.com/shopspring/decimal"
 )
 
 type Storager interface {
@@ -24,6 +25,8 @@ type UserStorager interface {
 
 type OrderStorager interface {
 	LoadOrder(ctx context.Context, l log.Logger, login string, order string) (err error)
+	GetNotProcessedOrders(ctx context.Context, l log.Logger) (orders []postgres.OrderStatus, err error)
+	UpdateOrder(ctx context.Context, l log.Logger, order string, status string, accrual decimal.Decimal) (err error)
 }
 
 type HealthCheckStorager interface {

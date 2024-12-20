@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/itaraxa/turbo-waddle/internal/database/postgres"
 	e "github.com/itaraxa/turbo-waddle/internal/errors"
 	"github.com/itaraxa/turbo-waddle/internal/log"
+	"github.com/shopspring/decimal"
 )
 
 /*
@@ -76,4 +78,60 @@ func (s *Storage) LoadOrder(ctx context.Context, l log.Logger, login string, ord
 		err = e.ErrOrderAlreadyUploaded
 		return
 	}
+}
+
+/*
+GetNotProcessedOrders gets non-processed order from storage
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+
+Returns:
+
+	orders []postgres.OrderStatus
+	err error
+*/
+func (s *Storage) GetNotProcessedOrders(ctx context.Context, l log.Logger) (orders []postgres.OrderStatus, err error) {
+	l.Debug("getting not processed orders from storage")
+	startTime := time.Now()
+
+	orders, err = s.PostgresRepository.GetNotProcessedOrders(ctx, l)
+	if err != nil {
+		l.Error("getting not processed orders from storage error", "error", err)
+		return
+	}
+
+	l.Debug("getting not processed orders from storage complited", "duration", time.Since(startTime))
+	return
+}
+
+/*
+UpdateOrder updates status and accrual for order in storage
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	order string
+	status string
+	accrual decimal.Decimal
+
+Returns:
+
+	err error
+*/
+func (s *Storage) UpdateOrder(ctx context.Context, l log.Logger, order string, status string, accrual decimal.Decimal) (err error) {
+	l.Debug("updating order in storage")
+	startTIme := time.Now()
+
+	err = s.PostgresRepository.UpdateOrder(ctx, l, order, status, accrual)
+	if err != nil {
+		l.Error("updating order in storage error", "error", err)
+		return
+	}
+
+	l.Debug("updating order in storage complited", "duration", time.Since(startTIme))
+	return
 }
