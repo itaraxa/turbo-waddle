@@ -29,6 +29,7 @@ type storager interface {
 	services.UserStorager
 	services.HealthCheckStorager
 	services.OrderStorager
+	services.BalanceStorager
 }
 
 type router interface {
@@ -125,7 +126,7 @@ func (sa *ServerApp) Run() {
 	sa.r.Post(`/api/user/login`, rest.Login(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Post(`/api/user/orders`, rest.PostOrders(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Get(`/api/user/orders`, rest.GetOrders(ctx, sa.log, sa.storage, sa.config.SecretKey))
-	sa.r.Get(`/api/user/balance`, rest.GetBalance())
+	sa.r.Get(`/api/user/balance`, rest.GetBalance(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Post(`/api/user/balance/withdraw`, rest.WithdrawRequest())
 	sa.r.Get(`/api/user/withdrawals`, rest.GetWithdrawls())
 

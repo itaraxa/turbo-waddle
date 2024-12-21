@@ -21,10 +21,6 @@ const (
 	ORDER_PROCESSED  = `PROCESSED`
 )
 
-const (
-	sqlQueryTimeout = 1 * time.Second
-)
-
 func (pr *PostgresRepository) CheckOrderInDB(ctx context.Context, l log.Logger, tx *sql.Tx, order string) (login string, err error) {
 
 	err = tx.QueryRowContext(ctx, "SELECT user_id FROM gophermart.orders WHERE order_id = $1;", order).Scan(&login)
@@ -155,10 +151,10 @@ func (pr *PostgresRepository) GetOrders(ctx context.Context, l log.Logger, login
 	defer cancel()
 
 	query := `
-	SELECT order_id, order_status, order_sum, processed_at 
-	FROM gophermart.orders 
-	WHERE user_id = (SELECT user_id FROM gophermart.users WHERE user_name = $1) 
-	ORDER BY processed_at DESC;
+		SELECT order_id, order_status, order_sum, processed_at 
+		FROM gophermart.orders 
+		WHERE user_id = (SELECT user_id FROM gophermart.users WHERE user_name = $1) 
+		ORDER BY processed_at DESC;
 	`
 	rows, err := pr.DB.QueryContext(ctxWithTimeout, query, login)
 	if err != nil {

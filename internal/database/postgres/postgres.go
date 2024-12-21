@@ -11,6 +11,10 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+const (
+	sqlQueryTimeout = 1 * time.Second
+)
+
 type PostgresRepository struct {
 	DB *sql.DB
 }

@@ -21,4 +21,6 @@ type OrderStorager interface {
 	storage.OrderStorager
 }
 
-type balanceStorager interface{}
+type BalanceStorager interface {
+	storage.BalanceStorager
+}

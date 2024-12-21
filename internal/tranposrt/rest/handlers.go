@@ -17,6 +17,7 @@ import (
 type storager interface {
 	services.UserStorager
 	services.OrderStorager
+	services.BalanceStorager
 }
 
 /*
@@ -352,9 +353,60 @@ func GetOrders(ctx context.Context, l log.Logger, s storager, sk []byte) http.Ha
 }
 
 // Получение баланса
-func GetBalance() http.HandlerFunc {
+func GetBalance(ctx context.Context, l log.Logger, s storager, sk []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		l.Info("getting balance request")
+		startTime := time.Now()
 
+		// Check authentication
+		token := r.Header.Get("Autorisation")
+		if token == "" {
+			http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+			err := errors.Join(e.ErrUserIsNotauthenticated, errors.New("authetication token was not provided"))
+			l.Error("user not authenticated", "error", err)
+			return
+		}
+		login, err := services.CheckAuthentication(ctx, l, s, token, sk)
+		if err != nil {
+			http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+			err := errors.Join(e.ErrUserIsNotauthenticated, err)
+			l.Error("user not authenticated", "error", err)
+			return
+		}
+		l.Debug("request from user", "login", login)
+
+		// get balance
+		balance, err := services.GetBalance(ctx, l, s, login)
+		if err != nil {
+			switch {
+			case errors.Is(err, e.ErrUserIsNotauthenticated):
+				http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+				err := errors.Join(e.ErrUserIsNotauthenticated, err)
+				l.Error("user not authenticated", "error", err)
+				return
+			default:
+				http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+				l.Error("internal server error", "error", err)
+				return
+			}
+		}
+		jsonData, err := json.Marshal(balance)
+		if err != nil {
+			http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+			l.Error("internal server error: marshal data", "error", err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(jsonData)
+		if err != nil {
+			http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+			l.Error("internal server error: writting body", "error", err)
+			return
+		}
+
+		l.Info("getting balance request completed", "duration", time.Since(startTime))
 	}
 }
 

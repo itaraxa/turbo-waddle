@@ -32,6 +32,10 @@ type OrderStorager interface {
 	UpdateOrder(ctx context.Context, l log.Logger, order string, status string, accrual decimal.Decimal) (err error)
 }
 
+type BalanceStorager interface {
+	GetBalance(ctx context.Context, l log.Logger, login string) (bal models.Balance, err error)
+}
+
 type HealthCheckStorager interface {
 	HealthCheck(ctx context.Context, l log.Logger) (err error)
 }
