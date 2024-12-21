@@ -29,7 +29,10 @@ func LoadOrder(ctx context.Context, l log.Logger, os OrderStorager, login string
 
 // Получение информации о бонусах пользователя
 func GetOrders(ctx context.Context, l log.Logger, os OrderStorager, login string) (orders []models.Order, err error) {
-
+	orders, err = os.GetOrders(ctx, l, login)
+	if err != nil {
+		l.Error("getting orders from storage error")
+	}
 	return
 }
 

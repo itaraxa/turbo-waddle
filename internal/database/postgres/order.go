@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/itaraxa/turbo-waddle/internal/log"
+	"github.com/itaraxa/turbo-waddle/internal/models"
 	"github.com/shopspring/decimal"
 )
 
@@ -18,6 +19,10 @@ const (
 	ORDER_PROCESSING = `PROCESSING`
 	ORDER_INVALID    = `INVALID`
 	ORDER_PROCESSED  = `PROCESSED`
+)
+
+const (
+	sqlQueryTimeout = 1 * time.Second
 )
 
 func (pr *PostgresRepository) CheckOrderInDB(ctx context.Context, l log.Logger, tx *sql.Tx, order string) (login string, err error) {
@@ -100,6 +105,21 @@ func (pr *PostgresRepository) GetNotProcessedOrders(ctx context.Context, l log.L
 	return
 }
 
+/*
+UpdateOrder updates order information: status and accrual sun in storage
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	order string
+	status string
+	accrual decimal.Decimal
+
+Returns:
+
+	err error
+*/
 func (pr *PostgresRepository) UpdateOrder(ctx context.Context, l log.Logger, order string, status string, accrual decimal.Decimal) (err error) {
 	l.Debug("updating order in postgres db")
 	startTIme := time.Now()
@@ -111,4 +131,65 @@ func (pr *PostgresRepository) UpdateOrder(ctx context.Context, l log.Logger, ord
 	}
 	l.Debug("updating order in postgres db complited", "duration", time.Since(startTIme))
 	return
+}
+
+/*
+GetOrders gets list of user orders
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	login string
+
+Returns:
+
+	orders []models.Order
+	err error
+*/
+func (pr *PostgresRepository) GetOrders(ctx context.Context, l log.Logger, login string) (orders []models.Order, err error) {
+	l.Debug("getting orders from postgres db", "login", login)
+	startTime := time.Now()
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, sqlQueryTimeout)
+	defer cancel()
+
+	query := `
+	SELECT order_id, order_status, order_sum, processed_at 
+	FROM gophermart.orders 
+	WHERE user_id = (SELECT user_id FROM gophermart.users WHERE user_name = $1) 
+	ORDER BY processed_at DESC;
+	`
+	rows, err := pr.DB.QueryContext(ctxWithTimeout, query, login)
+	if err != nil {
+		l.Error("getting orders from postgres db error", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var order, status string
+		var accrual decimal.Decimal
+		var processedTime time.Time
+
+		if err = rows.Scan(&order, &status, &accrual, &processedTime); err != nil {
+			l.Error("getting orders from postgres db error", "error", err)
+			return nil, err
+		}
+
+		orders = append(orders, models.Order{
+			Number:     order,
+			Status:     status,
+			Accrual:    accrual,
+			UploadedAt: processedTime,
+		})
+	}
+
+	if err = rows.Err(); err != nil {
+		l.Error("rows iteration error", "error", err)
+		return nil, err
+	}
+
+	l.Debug("getting orders from postgres db completed", "duration", time.Since(startTime), "login", login, "order number", len(orders))
+	return orders, nil
 }

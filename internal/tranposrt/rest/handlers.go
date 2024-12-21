@@ -181,7 +181,20 @@ func Login(ctx context.Context, l log.Logger, s storager, sk []byte) http.Handle
 	}
 }
 
-// Добавление заказа
+/*
+PostOrders - create handler for adding new orders
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	s storager
+	sk []byte: sekret key for signing/checking JWT token
+
+Returns:
+
+	http.HandlerFunc
+*/
 func PostOrders(ctx context.Context, l log.Logger, s storager, sk []byte) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Info("order adding request")
@@ -264,10 +277,77 @@ func PostOrders(ctx context.Context, l log.Logger, s storager, sk []byte) http.H
 	}
 }
 
-// Получение списка заказов
-func GetOrders() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+/*
+GetOrders - return handler-function what returns list of orders
 
+Args:
+
+	ctx context.Context
+	l log.Logger
+	s storager
+	sk []byte: sekret key for JWT-token
+
+Returns:
+
+	http.HandlerFunc
+*/
+func GetOrders(ctx context.Context, l log.Logger, s storager, sk []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l.Info("getting orders request")
+		startTIme := time.Now()
+
+		// Check authentication
+		token := r.Header.Get("Autorisation")
+		if token == "" {
+			http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+			err := errors.Join(e.ErrUserIsNotauthenticated, errors.New("authetication token was not provided"))
+			l.Error("user not authenticated", "error", err)
+			return
+		}
+		login, err := services.CheckAuthentication(ctx, l, s, token, sk)
+		if err != nil {
+			http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+			err := errors.Join(e.ErrUserIsNotauthenticated, err)
+			l.Error("user not authenticated", "error", err)
+			return
+		}
+		l.Debug("request from user", "login", login)
+
+		// Getting orders from storage
+		orders, err := services.GetOrders(ctx, l, s, login)
+		if err != nil {
+			switch {
+			case errors.Is(err, e.ErrNoData):
+				http.Error(w, e.ErrNoData.Error(), e.ErrNoData.Code)
+				l.Error("no data for response", "error", err)
+				return
+			case errors.Is(err, e.ErrUserIsNotauthenticated):
+				http.Error(w, e.ErrUserIsNotauthenticated.Error(), e.ErrUserIsNotauthenticated.Code)
+				l.Error("user not authenticated", "error", err)
+				return
+			default:
+				http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+				l.Error("internal server error", "error", err)
+				return
+			}
+		}
+
+		jsonData, err := json.Marshal(orders)
+		if err != nil {
+			http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+			l.Error("internal server error: marshal data", "error", err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(jsonData)
+		if err != nil {
+			http.Error(w, e.ErrInternalServerError.Error(), e.ErrInternalServerError.Code)
+			l.Error("internal server error: writting body", "error", err)
+			return
+		}
+
+		l.Info("getting orders reques completed", "duration", time.Since(startTIme))
 	}
 }
 

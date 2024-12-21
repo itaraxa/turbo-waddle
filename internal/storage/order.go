@@ -9,6 +9,7 @@ import (
 	"github.com/itaraxa/turbo-waddle/internal/database/postgres"
 	e "github.com/itaraxa/turbo-waddle/internal/errors"
 	"github.com/itaraxa/turbo-waddle/internal/log"
+	"github.com/itaraxa/turbo-waddle/internal/models"
 	"github.com/shopspring/decimal"
 )
 
@@ -78,6 +79,34 @@ func (s *Storage) LoadOrder(ctx context.Context, l log.Logger, login string, ord
 		err = e.ErrOrderAlreadyUploaded
 		return
 	}
+}
+
+/*
+GetOrders gets orders from storage
+
+Args:
+
+	ctx context.Context
+	l log.Logger
+	login string
+
+Returns:
+
+	orders []models.Order
+	err error
+*/
+func (s *Storage) GetOrders(ctx context.Context, l log.Logger, login string) (orders []models.Order, err error) {
+	l.Debug("getting orders from storage")
+	startTime := time.Now()
+
+	orders, err = s.PostgresRepository.GetOrders(ctx, l, login)
+	if err != nil {
+		l.Error("getting orders from storage error", "error", err)
+		return
+	}
+
+	l.Debug("getting orders from storage complited", "duration", time.Since(startTime))
+	return
 }
 
 /*

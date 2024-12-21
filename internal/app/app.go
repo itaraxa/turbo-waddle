@@ -121,7 +121,7 @@ func (sa *ServerApp) Run() {
 	sa.r.Post(`/api/user/register`, rest.Register(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Post(`/api/user/login`, rest.Login(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Post(`/api/user/orders`, rest.PostOrders(ctx, sa.log, sa.storage, sa.config.SecretKey))
-	sa.r.Get(`/api/user/orders`, rest.GetOrders())
+	sa.r.Get(`/api/user/orders`, rest.GetOrders(ctx, sa.log, sa.storage, sa.config.SecretKey))
 	sa.r.Get(`/api/user/balance`, rest.GetBalance())
 	sa.r.Post(`/api/user/balance/withdraw`, rest.WithdrawRequest())
 	sa.r.Get(`/api/user/withdrawals`, rest.GetWithdrawls())
