@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -34,6 +35,12 @@ func NewPostgresRepository(ctx context.Context, l log.Logger, databaseURL string
 	if err != nil {
 		l.Error("Openning connection to database error", "error", err)
 		return nil, ErrOpenConnection
+	}
+
+	// check connetion to storage
+	if err := db.PingContext(ctx); err != nil {
+		l.Error("Checking connection to database error", "error", err)
+		return nil, errors.Join(err, ErrOpenConnection)
 	}
 
 	ctxWithTimeout, cancelWithTimeout := context.WithTimeout(ctx, 5*time.Second)

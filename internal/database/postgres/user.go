@@ -123,5 +123,8 @@ func (pr *PostgresRepository) CheckUser(ctx context.Context, l log.Logger, tx *s
 		l.Error("getting data from database error", "error", err)
 		return false, 0, errors.Join(err, ErrAddUserQueryToDB)
 	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, 0, errors.Join(err, e.ErrLoginIsAlreadyUsed)
+	}
 	return true, user_id.Int64, nil
 }

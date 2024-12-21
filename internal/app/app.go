@@ -111,6 +111,9 @@ func (sa *ServerApp) Run() {
 		}
 	}(ctx, sa.log, stopAppChannel, sa.storage, 10*time.Second)
 
+	// accrual update
+	go services.AccrualUpdate(ctx, sa.log, sa.storage, sa.config.AccrualSystemAddress)
+
 	// setup router
 	sa.r.Use(rest.Logger(),
 		rest.ChekcUser(),
@@ -142,7 +145,7 @@ func (sa *ServerApp) Run() {
 
 	// stop router
 	<-ctx.Done()
-	sa.log.Info(`stopping router`, `reason`, `context was cancele`)
+	sa.log.Info(`stopping router`, `reason`, `context was canceled`)
 	ctxWithTimeout, cancelWithTimeout := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelWithTimeout()
 	err := server.Shutdown(ctxWithTimeout)

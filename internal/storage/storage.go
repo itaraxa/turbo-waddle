@@ -43,7 +43,7 @@ type Storage struct {
 func NewStorage(ctx context.Context, l log.Logger, dsn string) (*Storage, error) {
 	l.Info("Start creating new storage", "database source name", dsn)
 	pr, err := postgres.NewPostgresRepository(ctx, l, dsn)
-	if err != err {
+	if err != nil {
 		l.Error("Creating new storage error", "error", err)
 		return nil, errors.Join(ErrCreateNewStorage, err)
 	}
